@@ -87,3 +87,9 @@ function getHeartOfAzerothLevel(items: Item[]) {
 
     return hoa.azerite_details.level.value
 }
+
+export const execute: (args: string[], message: Message) => Promise<Message> = async (args: string[], message: Message) => {
+    return await lookup(args, message)
+}
+
+export const name: string = 'lookup'

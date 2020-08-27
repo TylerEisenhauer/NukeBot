@@ -28,3 +28,9 @@ export async function move(args: string[], message: Message) {
         return await message.channel.send('At least one of those channels doesn\'t exist')
     }
 }
+
+export const execute: (args: string[], message: Message) => Promise<Message> = async (args: string[], message: Message) => {
+    return await move(args, message)
+}
+
+export const name: string = 'move'

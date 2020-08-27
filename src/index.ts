@@ -1,14 +1,26 @@
-import {Client, Message, MessageReaction, Permissions, User, WebhookClient} from 'discord.js'
-import {commandHandler} from './handlers/command'
+import {Client, Collection, Message, MessageReaction, Permissions, User, WebhookClient} from 'discord.js'
 import {config} from 'dotenv-flow'
 import {parseArgs} from './helpers/parsing'
 import {initializeAPIClients} from './config/config'
 import * as puppeteer from 'puppeteer'
 import {isEqual} from 'lodash'
+import * as fs from "fs"
+
+class ExtendedClient extends Client {
+    public commands?: Collection<string, any>
+}
 
 config()
-const client = new Client()
 const webhookClient = new WebhookClient(process.env.WEBHOOK_ID, process.env.WEBHOOK_TOKEN)
+const client: ExtendedClient = new Client()
+client.commands = new Collection()
+
+const commandFiles: string[] = fs.readdirSync(`${__dirname}/commands`).filter(file => file.endsWith('.js'));
+commandFiles.map((file: string) => {
+    const command = require(`./commands/${file}`)
+    client.commands.set(command.name, command)
+})
+
 const prefix = '!'
 let cache: string[] = []
 let existingProductList: string[] = []
@@ -64,20 +76,25 @@ client.on('message', async (message: Message) => {
     let performGamaAlert: boolean = process.env.PERFORM_GAMA_ALERT === 'true'
 
     if (performGamaAlert && message.author.id === process.env.GAMA_ID && message.channel.id === process.env.ALERT_CHANNEL_ID) {
-        await commandHandler('gamapost', null, message)
+        await client.commands.get('gamapost').execute(null, message)
     }
     if (performGamaAlert && message.author.id === process.env.PWN_ID && message.channel.id === process.env.ALERT_CHANNEL_ID) {
-        await commandHandler('pwnpost', null, message)
+        await client.commands.get('pwnpost').execute(null, message)
     }
 
     if (!message.content.startsWith(prefix)) return
 
     const args: string[] = parseArgs(prefix, message.content)
     const command: string = args.shift().toLowerCase()
+    if (command === 'pwnpost' || command === 'gamapost') return
 
     if (command.startsWith(prefix)) return
 
-    return await commandHandler(command, args, message)
+    try {
+        return await client.commands.get(command).execute(args, message)
+    } catch {
+        return await message.channel.send('I have no idea what the FUCK you\'re talking about')
+    }
 })
 
 client.on('messageReactionAdd', async (reaction: MessageReaction, user: User) => {

@@ -12,7 +12,7 @@ export async function clear(args: string[], message: Message) {
     if (limit > 100) {
         return await message.channel.send(`99 Messages or less buddy.`)
     }
-    const messages: Collection<string, Message> = await message.channel.messages.fetch({ limit })
+    const messages: Collection<string, Message> = await message.channel.messages.fetch({limit})
     const tempMessage: Message = await message.channel.send('I can\'t leave you idiots alone for 5 minutes')
 
     await message.channel.bulkDelete(messages, true)
@@ -20,3 +20,9 @@ export async function clear(args: string[], message: Message) {
         await tempMessage.delete()
     }, 5000)
 }
+
+export const execute: (args: string[], message: Message) => Promise<Message> = async (args: string[], message: Message) => {
+    return await clear(args, message)
+}
+
+export const name: string = 'clear'
